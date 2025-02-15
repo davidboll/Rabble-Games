@@ -6,7 +6,9 @@
   "type": "commonjs",
   "license": "MIT",
   "scripts": {
-    "build": "tsc",
+    "prebuild": "rimraf dist",
+    "build": "tsc && yarn copy-static",
+    "copy-static": "mkdir -p dist/packages && cp -r ../rabble-proviva/public ../doritos/public dist/packages/",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "start": "node dist/server.js",
     "lint": "eslint .",

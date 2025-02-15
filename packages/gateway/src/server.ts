@@ -1,5 +1,4 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { createProxyMiddleware } from 'http-proxy-middleware';
 import { createServer } from 'http';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -12,25 +11,28 @@ const app = express();
 const server = createServer(app);
 const PORT = process.env.PORT || 10000;
 
+// Determine the root directory for the monorepo
+const MONOREPO_ROOT = path.join(__dirname, '..', '..', '..');
+
 console.log(`[Gateway] Attempting to start on PORT: ${PORT}`);
+console.log(`[Gateway] Monorepo root: ${MONOREPO_ROOT}`);
+console.log(`[Gateway] Current directory: ${__dirname}`);
 
 // Enable CORS
 app.use(cors());
 
 // Serve Proviva directly
-app.use('/rabble-proviva', express.static(path.join(__dirname, '../../rabble-proviva/public')));
-const provivaIo = new Server(server, {
-  path: '/socket.io',
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
-    credentials: true
-  }
-});
+const provivaPath = path.join(MONOREPO_ROOT, 'packages', 'rabble-proviva', 'public');
+console.log(`[Gateway] Serving Proviva from: ${provivaPath}`);
+app.use('/rabble-proviva', express.static(provivaPath));
 
 // Serve Doritos directly
-app.use('/doritos', express.static(path.join(__dirname, '../../doritos/public')));
-const doritosIo = new Server(server, {
+const doritosPath = path.join(MONOREPO_ROOT, 'packages', 'doritos', 'public');
+console.log(`[Gateway] Serving Doritos from: ${doritosPath}`);
+app.use('/doritos', express.static(doritosPath));
+
+// Setup Socket.IO
+const io = new Server(server, {
   path: '/socket.io',
   cors: {
     origin: "*",
@@ -39,7 +41,8 @@ const doritosIo = new Server(server, {
   }
 });
 
-// Setup Socket.IO handlers for Proviva
+// Namespace for Proviva
+const provivaIo = io.of('/rabble-proviva');
 provivaIo.on('connection', (socket) => {
   console.log('[Proviva] Client connected');
   
@@ -50,7 +53,8 @@ provivaIo.on('connection', (socket) => {
   // Add your Proviva-specific socket handlers here
 });
 
-// Setup Socket.IO handlers for Doritos
+// Namespace for Doritos
+const doritosIo = io.of('/doritos');
 doritosIo.on('connection', (socket) => {
   console.log('[Doritos] Client connected');
   
