@@ -8,7 +8,7 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "concurrently \"cd packages/gateway && yarn build && yarn dev\" \"cd packages/rabble-proviva && yarn dev\" \"cd packages/doritos && yarn dev\"",
-    "start": "yarn dev",
+    "start": "cd packages/gateway && yarn start",
     "lint": "turbo run lint",
     "test": "turbo run test",
     "start:proviva": "yarn workspace @rabble/proviva run dev",

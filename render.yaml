@@ -2,18 +2,17 @@ services:
   - type: web
     name: rabble-games-gateway
     env: node
-    nodeVersion: 18
+    plan: starter
+    nodeVersion: 18.x
     buildCommand: yarn install && yarn build
-    startCommand: cd packages/gateway && yarn start
+    startCommand: yarn start
+    disk:
+      name: tmp
+      mountPath: /tmp
+      sizeGB: 1
     envVars:
       - key: PORT
-        value: 8080
-      - key: GATEWAY_PORT
-        value: 8080
-      - key: PROVIVA_PORT
-        value: 3001
-      - key: DORITOS_PORT
-        value: 3002
+        value: 10000
       - key: NODE_ENV
         value: production
       - key: FIREBASE_API_KEY
