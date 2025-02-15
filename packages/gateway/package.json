@@ -1,29 +1,33 @@
 {
   "name": "@rabble/gateway",
-  "version": "1.0.0",
+  "version": "0.1.0",
+  "private": true,
   "main": "dist/server.js",
   "type": "commonjs",
   "license": "MIT",
   "scripts": {
     "build": "tsc",
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "start": "node dist/server.js",
-    "dev": "nodemon --exec ts-node src/server.ts",
+    "lint": "eslint .",
     "clean": "rimraf dist",
     "start:prod": "node dist/server.js"
   },
   "dependencies": {
+    "@rabble/shared": "*",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "http-proxy-middleware": "^2.0.6",
-    "socket.io": "^4.7.4",
-    "dotenv": "^16.4.1",
-    "cors": "^2.8.5"
+    "socket.io": "^4.7.2",
+    "firebase": "^10.7.1"
   },
   "devDependencies": {
-    "@types/express": "^4.17.21",
-    "@types/node": "^20.11.16",
-    "@types/cors": "^2.8.17",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.3.3",
+    "@types/cors": "^2.8.14",
+    "@types/express": "^4.17.17",
+    "@types/node": "^20.6.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.2.2",
     "nodemon": "^3.0.3",
     "rimraf": "^5.0.5"
   }

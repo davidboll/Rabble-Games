@@ -3,10 +3,13 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 import { createServer } from 'http';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { Server } from 'socket.io';
 
 dotenv.config();
 
 const app = express();
+const server = createServer(app);
 const PORT = process.env.PORT || 10000;
 
 console.log(`[Gateway] Attempting to start on PORT: ${PORT}`);
@@ -14,87 +17,48 @@ console.log(`[Gateway] Attempting to start on PORT: ${PORT}`);
 // Enable CORS
 app.use(cors());
 
-// Definiera portar för olika spel
-interface GamePorts {
-  [key: string]: number;
-}
-
-const GAME_PORTS: GamePorts = {
-  'rabble-proviva': process.env.PROVIVA_PORT ? parseInt(process.env.PROVIVA_PORT, 10) : 3001,
-  doritos: process.env.DORITOS_PORT ? parseInt(process.env.DORITOS_PORT, 10) : 3002
-};
-
-// Middleware för loggning
-app.use((req: Request, res: Response, next: NextFunction) => {
-  console.log(`[Gateway] Incoming request: ${req.method} ${req.url}`);
-  next();
-});
-
-// Error handling middleware
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  console.error('[Gateway] Error:', err);
-  res.status(500).json({ error: 'Internal Server Error', details: err.message });
-});
-
-// Endpoint för att registrera portar dynamiskt
-interface PortRegistration {
-  service: string;
-  port: number;
-}
-
-app.post('/register-port', express.json(), (req: Request<{}, {}, PortRegistration>, res: Response) => {
-  const { service, port } = req.body;
-  console.log(`[Gateway] Received port registration request for ${service} on port ${port}`);
-  
-  if (service && port && GAME_PORTS[service]) {
-    console.log(`[Gateway] Updating ${service} port from ${GAME_PORTS[service]} to ${port}`);
-    GAME_PORTS[service] = port;
-    
-    // Uppdatera proxy för denna service
-    setupProxy(service, port);
-    
-    res.status(200).json({ message: 'Port registered successfully' });
-  } else {
-    console.error(`[Gateway] Invalid port registration request:`, { service, port });
-    res.status(400).json({ error: 'Invalid service or port' });
+// Serve Proviva directly
+app.use('/rabble-proviva', express.static(path.join(__dirname, '../../rabble-proviva/public')));
+const provivaIo = new Server(server, {
+  path: '/socket.io',
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
-// Function to setup proxy for a game
-function setupProxy(game: string, port: number): void {
-  console.log(`[Gateway] Setting up proxy for /${game} to http://127.0.0.1:${port}`);
+// Serve Doritos directly
+app.use('/doritos', express.static(path.join(__dirname, '../../doritos/public')));
+const doritosIo = new Server(server, {
+  path: '/socket.io',
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
+
+// Setup Socket.IO handlers for Proviva
+provivaIo.on('connection', (socket) => {
+  console.log('[Proviva] Client connected');
   
-  const proxy = createProxyMiddleware({
-    target: `http://127.0.0.1:${port}`,
-    changeOrigin: true,
-    ws: true,
-    pathRewrite: {
-      [`^/${game}`]: ''  // Remove the game prefix completely
-    },
-    onError: (err: Error, req: Request, res: Response) => {
-      console.error(`[Gateway] Proxy error for /${game}:`, err);
-      res.status(500).send(`Proxy error: ${err.message}`);
-    },
-    onProxyReq: (proxyReq, req) => {
-      // Log the original URL and the URL after rewrite
-      console.log(`[Gateway] Proxying ${req.method} ${req.url} to ${game} (port ${port})`);
-      console.log(`[Gateway] Rewritten URL: ${proxyReq.path}`);
-    },
-    onProxyRes: (proxyRes, req) => {
-      console.log(`[Gateway] Received response from ${game} for ${req.method} ${req.url}: ${proxyRes.statusCode}`);
-    }
+  socket.on('disconnect', () => {
+    console.log('[Proviva] Client disconnected');
   });
-
-  // Setup proxy for the game's main routes
-  app.use(`/${game}`, proxy);
   
-  // Setup proxy for Socket.IO
-  app.use(`/socket.io`, proxy);
-}
+  // Add your Proviva-specific socket handlers here
+});
 
-// Initial proxy setup for each game
-Object.entries(GAME_PORTS).forEach(([game, port]) => {
-  setupProxy(game, port);
+// Setup Socket.IO handlers for Doritos
+doritosIo.on('connection', (socket) => {
+  console.log('[Doritos] Client connected');
+  
+  socket.on('disconnect', () => {
+    console.log('[Doritos] Client disconnected');
+  });
+  
+  // Add your Doritos-specific socket handlers here
 });
 
 // Landningssida
@@ -138,22 +102,23 @@ app.get('/', (_req: Request, res: Response) => {
       <body>
         <h1>Rabble Games Gateway</h1>
         <div class="games">
-          ${Object.keys(GAME_PORTS).map(game => 
-            `<a href="/${game}" class="game-link">${game.charAt(0).toUpperCase() + game.slice(1).replace('-', ' ')}</a>`
-          ).join('')}
+          <a href="/rabble-proviva" class="game-link">Proviva</a>
+          <a href="/doritos" class="game-link">Doritos</a>
         </div>
       </body>
     </html>
   `);
 });
 
-// Skapa HTTP-server
-const server = createServer(app);
+// Error handling middleware
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  console.error('[Gateway] Error:', err);
+  res.status(500).json({ error: 'Internal Server Error', details: err.message });
+});
 
 // Starta servern
 server.listen(PORT, () => {
   console.log(`[Gateway] Server SUCCESSFULLY running on http://localhost:${PORT}`);
-  Object.entries(GAME_PORTS).forEach(([game, port]) => {
-    console.log(`[Gateway] ${game.toUpperCase().replace('-', ' ')} accessible at http://localhost:${PORT}/${game}`);
-  });
+  console.log(`[Gateway] PROVIVA accessible at http://localhost:${PORT}/rabble-proviva`);
+  console.log(`[Gateway] DORITOS accessible at http://localhost:${PORT}/doritos`);
 });
