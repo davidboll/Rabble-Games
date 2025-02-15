@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: rabble-games-gateway
+    env: node
+    buildCommand: yarn install && yarn build
+    startCommand: yarn dev
+    envVars:
+      - key: GATEWAY_PORT
+        value: 8080
+      - key: PROVIVA_PORT
+        value: 3001
+      - key: DORITOS_PORT
+        value: 3002
+      - key: NODE_ENV
+        value: production
+      - key: FIREBASE_API_KEY
+        sync: false
+      - key: FIREBASE_AUTH_DOMAIN
+        sync: false
+      - key: FIREBASE_DATABASE_URL
+        sync: false
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_STORAGE_BUCKET
+        sync: false
+      - key: FIREBASE_MESSAGING_SENDER_ID
+        sync: false
+      - key: FIREBASE_APP_ID
+        sync: false
