@@ -7,7 +7,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.GATEWAY_PORT ? parseInt(process.env.GATEWAY_PORT, 10) : 8080;
+const PORT = process.env.PORT || process.env.GATEWAY_PORT || 8080;
 
 console.log(`[Gateway] Attempting to start on PORT: ${PORT}`);
 

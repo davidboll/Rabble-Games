@@ -2,9 +2,12 @@ services:
   - type: web
     name: rabble-games-gateway
     env: node
+    nodeVersion: 18
     buildCommand: yarn install && yarn build
-    startCommand: yarn dev
+    startCommand: cd packages/gateway && yarn start
     envVars:
+      - key: PORT
+        value: 8080
       - key: GATEWAY_PORT
         value: 8080
       - key: PROVIVA_PORT
