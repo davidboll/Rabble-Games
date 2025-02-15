@@ -11,24 +11,34 @@ const app = express();
 const server = createServer(app);
 const PORT = process.env.PORT || 10000;
 
-// Determine the root directory for the monorepo
-const MONOREPO_ROOT = path.join(__dirname, '..', '..', '..');
+// Determine if we're in production
+const isProduction = process.env.NODE_ENV === 'production';
 
+console.log(`[Gateway] Starting in ${isProduction ? 'production' : 'development'} mode`);
 console.log(`[Gateway] Attempting to start on PORT: ${PORT}`);
-console.log(`[Gateway] Monorepo root: ${MONOREPO_ROOT}`);
-console.log(`[Gateway] Current directory: ${__dirname}`);
 
 // Enable CORS
 app.use(cors());
 
-// Serve Proviva directly
-const provivaPath = path.join(MONOREPO_ROOT, 'packages', 'rabble-proviva', 'public');
-console.log(`[Gateway] Serving Proviva from: ${provivaPath}`);
-app.use('/rabble-proviva', express.static(provivaPath));
+// Setup paths for static files
+let provivaPath: string;
+let doritosPath: string;
 
-// Serve Doritos directly
-const doritosPath = path.join(MONOREPO_ROOT, 'packages', 'doritos', 'public');
+if (isProduction) {
+  // In production, serve from the root of the project
+  provivaPath = path.join(process.cwd(), 'packages', 'rabble-proviva', 'public');
+  doritosPath = path.join(process.cwd(), 'packages', 'doritos', 'public');
+} else {
+  // In development, serve from relative paths
+  provivaPath = path.join(__dirname, '../../rabble-proviva/public');
+  doritosPath = path.join(__dirname, '../../doritos/public');
+}
+
+console.log(`[Gateway] Serving Proviva from: ${provivaPath}`);
 console.log(`[Gateway] Serving Doritos from: ${doritosPath}`);
+
+// Serve static files
+app.use('/rabble-proviva', express.static(provivaPath));
 app.use('/doritos', express.static(doritosPath));
 
 // Setup Socket.IO
@@ -49,8 +59,6 @@ provivaIo.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log('[Proviva] Client disconnected');
   });
-  
-  // Add your Proviva-specific socket handlers here
 });
 
 // Namespace for Doritos
@@ -61,8 +69,6 @@ doritosIo.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log('[Doritos] Client disconnected');
   });
-  
-  // Add your Doritos-specific socket handlers here
 });
 
 // Landningssida
