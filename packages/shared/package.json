@@ -1,0 +1,14 @@
+{
+  "name": "@rabble/shared",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "firebase-admin": "^11.11.0"
+  }
+}
